@@ -1,0 +1,567 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Manajemen Data Mahasiswa',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
+      ),
+      home: const MahasiswaListScreen(),
+    );
+  }
+}
+
+class Mahasiswa {
+  String nim;
+  String nama;
+  String prodi;
+  String kelas;
+
+  Mahasiswa({
+    required this.nim,
+    required this.nama,
+    required this.prodi,
+    required this.kelas,
+  });
+}
+
+
+class MahasiswaListScreen extends StatefulWidget {
+  const MahasiswaListScreen({super.key});
+
+  @override
+  State<MahasiswaListScreen> createState() => _MahasiswaListScreenState();
+}
+
+class _MahasiswaListScreenState extends State<MahasiswaListScreen> {
+  
+  final List<Mahasiswa> _listMahasiswa = [
+    Mahasiswa(nim: '231001', nama: 'Andi Saputra', prodi: 'Informatika', kelas: 'TI-3A'),
+    Mahasiswa(nim: '231002', nama: 'Budi Santoso', prodi: 'Informatika', kelas: 'TI-3A'),
+    Mahasiswa(nim: '231003', nama: 'Citra Dewi', prodi: 'Sistem Informasi', kelas: 'SI-3B'),
+    Mahasiswa(nim: '231004', nama: 'Deni Pratama', prodi: 'Teknik Komputer', kelas: 'TK-3A'),
+    Mahasiswa(nim: '231005', nama: 'Eka Wijaya', prodi: 'Sistem Informasi', kelas: 'SI-3A'),
+  ];
+
+  String _searchQuery = '';
+  String _selectedProdiFilter = 'Semua';
+
+  final List<String> _prodiOptions = [
+    'Semua',
+    'Informatika',
+    'Sistem Informasi',
+    'Teknik Komputer',
+  ];
+
+  
+  List<Mahasiswa> get _filteredMahasiswa {
+    return _listMahasiswa.where((mhs) {
+      final matchesSearch = mhs.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          mhs.nim.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesProdi = _selectedProdiFilter == 'Semua' || mhs.prodi == _selectedProdiFilter;
+      return matchesSearch && matchesProdi;
+    }).toList();
+  }
+
+  void _tambahMahasiswa(Mahasiswa mhs) {
+    setState(() {
+      _listMahasiswa.add(mhs);
+    });
+  }
+
+  void _editMahasiswa(int originalIndex, Mahasiswa mhs) {
+    setState(() {
+      _listMahasiswa[originalIndex] = mhs;
+    });
+  }
+
+  void _hapusMahasiswa(int originalIndex) {
+    setState(() {
+      _listMahasiswa.removeAt(originalIndex);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredList = _filteredMahasiswa;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Data Mahasiswa'),
+        elevation: 2,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Cari nama atau NIM...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+
+            
+            Row(
+              children: [
+                const Text('Filter Prodi: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: _selectedProdiFilter,
+                    isExpanded: true,
+                    items: _prodiOptions.map((String prodi) {
+                      return DropdownMenuItem<String>(
+                        value: prodi,
+                        child: Text(prodi),
+                      );
+                    }).toList(),
+                    onChanged: (newValue) {
+                      setState(() {
+                        _selectedProdiFilter = newValue!;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Mahasiswa: ${_listMahasiswa.length}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  if (_searchQuery.isNotEmpty || _selectedProdiFilter != 'Semua')
+                    Text(
+                      'Terdanftar di filter: ${filteredList.length}',
+                      style: TextStyle(color: Colors.indigo.shade700, fontSize: 13),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            
+            Expanded(
+              child: filteredList.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.person_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text(
+                            'Belum ada data mahasiswa',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: filteredList.length,
+                      itemBuilder: (context, index) {
+                        final mhs = filteredList[index];
+                        final originalIndex = _listMahasiswa.indexOf(mhs);
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 6.0),
+                          elevation: 2,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(12),
+                            title: Row(
+                              children: [
+                                Text(
+                                  mhs.nim,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    mhs.nama,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 6.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(mhs.prodi),
+                                  Text(mhs.kelas),
+                                ],
+                              ),
+                            ),
+                            
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DetailMahasiswaScreen(
+                                    mahasiswa: mhs,
+                                    onEdit: (updatedMhs) {
+                                      _editMahasiswa(originalIndex, updatedMhs);
+                                    },
+                                    onDelete: () {
+                                      _hapusMahasiswa(originalIndex);
+                                    },
+                                  ),
+                                ),
+                              );
+                              setState(() {});
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+      
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FormMahasiswaScreen(),
+            ),
+          );
+
+          if (result != null && result is Mahasiswa) {
+            _tambahMahasiswa(result);
+          }
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Mahasiswa'),
+      ),
+    );
+  }
+}
+
+
+class FormMahasiswaScreen extends StatefulWidget {
+  final Mahasiswa? mahasiswa;
+
+  const FormMahasiswaScreen({super.key, this.mahasiswa});
+
+  @override
+  State<FormMahasiswaScreen> createState() => _FormMahasiswaScreenState();
+}
+
+class _FormMahasiswaScreenState extends State<FormMahasiswaScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _nimController;
+  late TextEditingController _namaController;
+  late TextEditingController _prodiController;
+  late TextEditingController _kelasController;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _nimController = TextEditingController(text: widget.mahasiswa?.nim ?? '');
+    _namaController = TextEditingController(text: widget.mahasiswa?.nama ?? '');
+    _prodiController = TextEditingController(text: widget.mahasiswa?.prodi ?? '');
+    _kelasController = TextEditingController(text: widget.mahasiswa?.kelas ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nimController.dispose();
+    _namaController.dispose();
+    _prodiController.dispose();
+    _kelasController.dispose();
+    super.dispose();
+  }
+
+  void _simpan() {
+    
+    if (_formKey.currentState!.validate()) {
+      final newMhs = Mahasiswa(
+        nim: _nimController.text,
+        nama: _namaController.text,
+        prodi: _prodiController.text,
+        kelas: _kelasController.text,
+      );
+      Navigator.pop(context, newMhs);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEdit = widget.mahasiswa != null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEdit ? 'Form Edit Mahasiswa' : 'Form Tambah Mahasiswa'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _nimController,
+                decoration: const InputDecoration(
+                  labelText: 'NIM',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'NIM wajib diisi';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _namaController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nama wajib diisi';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _prodiController,
+                decoration: const InputDecoration(
+                  labelText: 'Program Studi',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Program Studi wajib diisi';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _kelasController,
+                decoration: const InputDecoration(
+                  labelText: 'Kelas',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Kelas wajib diisi';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _simpan,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: Text(
+                  isEdit ? 'Simpan Perubahan' : 'Simpan',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class DetailMahasiswaScreen extends StatefulWidget {
+  final Mahasiswa mahasiswa;
+  final Function(Mahasiswa) onEdit;
+  final VoidCallback onDelete;
+
+  const DetailMahasiswaScreen({
+    super.key,
+    required this.mahasiswa,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  State<DetailMahasiswaScreen> createState() => _DetailMahasiswaScreenState();
+}
+
+class _DetailMahasiswaScreenState extends State<DetailMahasiswaScreen> {
+  late Mahasiswa _currentMahasiswa;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentMahasiswa = widget.mahasiswa;
+  }
+
+ 
+  void _showDeleteDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: const Text('Apakah Anda yakin ingin menghapus data ini?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); 
+                widget.onDelete(); 
+                Navigator.of(context).pop(); 
+              },
+              child: const Text(
+                'Hapus',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detail Mahasiswa'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailItem('NIM', _currentMahasiswa.nim),
+            const Divider(),
+            _buildDetailItem('Nama', _currentMahasiswa.nama),
+            const Divider(),
+            _buildDetailItem('Program Studi', _currentMahasiswa.prodi),
+            const Divider(),
+            _buildDetailItem('Kelas', _currentMahasiswa.kelas),
+            const Spacer(),
+            Row(
+              children: [
+                
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final updated = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FormMahasiswaScreen(
+                            mahasiswa: _currentMahasiswa,
+                          ),
+                        ),
+                      );
+
+                      if (updated != null && updated is Mahasiswa) {
+                        setState(() {
+                          _currentMahasiswa = updated;
+                        });
+                        widget.onEdit(updated);
+                      }
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showDeleteDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade50,
+                      foregroundColor: Colors.red,
+                    ),
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Hapus'),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
